@@ -1,0 +1,54 @@
+@import "tailwindcss";
+
+@theme {
+  --color-codex-bg: #050505;
+  --color-codex-surface: #0a0a0a;
+  --color-codex-card: #121212;
+  --color-codex-accent: #c5a059;
+  --color-codex-ink: #f5f5f5;
+  --color-codex-muted: #71717a;
+  --color-codex-border: #1f1f1f;
+  
+  --font-display: "Cormorant Garamond", serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --font-sans: "Inter", sans-serif;
+}
+
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+body {
+  @apply bg-codex-bg text-codex-ink font-sans selection:bg-codex-accent/20 transition-colors duration-500;
+}
+
+.codex-card {
+  @apply border border-codex-border bg-codex-card/50 transition-all duration-300 hover:border-codex-accent/40;
+}
+
+.heading-serif {
+  @apply font-display tracking-tight text-codex-ink;
+}
+
+.text-mono {
+  @apply font-mono text-[10px] uppercase tracking-[0.2em] text-codex-accent font-bold;
+}
+
+.btn-primary {
+  @apply px-8 py-3 bg-codex-accent text-black font-sans font-bold text-[11px] uppercase tracking-[0.2em] rounded-full hover:bg-[#e2bc74] transition-colors;
+}
+
+/* Custom scrollbar for dark theme */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-codex-bg;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-codex-border rounded-full hover:bg-codex-accent/30 transition-colors;
+}
+
+.decorative-circle {
+  @apply absolute rounded-full border border-codex-accent/20 pointer-events-none;
+}
