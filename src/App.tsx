@@ -302,14 +302,56 @@ export default function App() {
                     </p>
                   </div>
 
+                  <div className="space-y-6">
+                    <h4 className="text-mono text-[10px] opacity-50 flex items-center gap-3">
+                      <BookOpen size={12} />
+                      Keeper's Field Notes
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-3">
+                        <div className="flex items-center gap-3 text-codex-accent">
+                          <MapPin size={14} />
+                          <p className="text-mono text-[9px] tracking-[0.2em] uppercase">Egg-Laying Grounds</p>
+                        </div>
+                        <p className="text-sm leading-relaxed text-codex-ink/75">{selectedDragon.nestingGrounds}</p>
+                      </article>
+                      <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-3">
+                        <div className="flex items-center gap-3 text-codex-accent">
+                          <Compass size={14} />
+                          <p className="text-mono text-[9px] tracking-[0.2em] uppercase">Nest Finder</p>
+                        </div>
+                        <p className="text-sm leading-relaxed text-codex-ink/75">{selectedDragon.nestingGuide}</p>
+                      </article>
+                      <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-3">
+                        <div className="flex items-center gap-3 text-codex-accent">
+                          <Wind size={14} />
+                          <p className="text-mono text-[9px] tracking-[0.2em] uppercase">Hunter-Proof Hideout</p>
+                        </div>
+                        <p className="text-sm leading-relaxed text-codex-ink/75">{selectedDragon.hideout}</p>
+                      </article>
+                      <article className="rounded-3xl border border-white/10 bg-white/[0.02] p-6 space-y-3">
+                        <div className="flex items-center gap-3 text-codex-accent">
+                          <Coins size={14} />
+                          <p className="text-mono text-[9px] tracking-[0.2em] uppercase">Diet</p>
+                        </div>
+                        <p className="text-sm leading-relaxed text-codex-ink/75">{selectedDragon.diet}</p>
+                        <p className="text-xs leading-relaxed text-codex-muted">{selectedDragon.feeding}</p>
+                      </article>
+                    </div>
+                    <article className="rounded-3xl border border-codex-accent/20 bg-codex-accent/5 p-6 space-y-3">
+                      <div className="flex items-center gap-3 text-codex-accent">
+                        <Star size={14} />
+                        <p className="text-mono text-[9px] tracking-[0.2em] uppercase">Favorite Thing To Do</p>
+                      </div>
+                      <p className="text-sm leading-relaxed text-codex-ink/80">{selectedDragon.favoriteActivity}</p>
+                    </article>
+                  </div>
+
                   <div className="flex justify-between items-center bg-white/[0.02] p-8 rounded-3xl border border-white/10">
                     <div className="space-y-1">
                       <p className="text-mono text-[8px] opacity-40">Egg Specification</p>
                       <p className="font-sans font-bold text-codex-accent text-sm tracking-widest">{selectedDragon.egg.toUpperCase()}</p>
                     </div>
-                    <button className="btn-primary">
-                       Download full report
-                    </button>
                   </div>
                 </div>
               </div>
