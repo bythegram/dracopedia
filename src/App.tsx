@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { 
   Search, 
@@ -18,11 +18,13 @@ import {
   ArrowLeft,
   Star,
   Skull,
-  Wind
+  Wind,
+  Shield,
+  X
 } from 'lucide-react';
 
 import { DRAGONS, Dragon } from './data/dragons';
-import { PHRASES, BABY_CARE, PACKING_LIST } from './data/lore';
+import { PHRASES, BABY_CARE, PACKING_LIST, PackingItem } from './data/lore';
 import { Rarity } from './data/types';
 
 export default function App() {
@@ -30,6 +32,61 @@ export default function App() {
   const [selectedDragon, setSelectedDragon] = useState<Dragon | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [activeRarity, setActiveRarity] = useState<Rarity | 'All'>('All');
+  const [selectedPackingItem, setSelectedPackingItem] = useState<PackingItem | null>(null);
+  const closePackingItemModalButtonRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedElementRef = useRef<HTMLElement | null>(null);
+
+  useEffect(() => {
+    if (!selectedPackingItem) {
+      return;
+    }
+
+    previouslyFocusedElementRef.current = document.activeElement as HTMLElement | null;
+    closePackingItemModalButtonRef.current?.focus();
+
+    const originalBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setSelectedPackingItem(null);
+      }
+
+      if (event.key === 'Tab') {
+        const modal = closePackingItemModalButtonRef.current?.closest('[role="dialog"]');
+        if (!modal) {
+          return;
+        }
+
+        const focusableElements = Array.from(
+          modal.querySelectorAll<HTMLElement>('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])')
+        ).filter((element) => !element.hasAttribute('disabled'));
+
+        if (focusableElements.length === 0) {
+          return;
+        }
+
+        const firstElement = focusableElements[0];
+        const lastElement = focusableElements[focusableElements.length - 1];
+
+        if (!event.shiftKey && document.activeElement === lastElement) {
+          event.preventDefault();
+          firstElement.focus();
+        } else if (event.shiftKey && document.activeElement === firstElement) {
+          event.preventDefault();
+          lastElement.focus();
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleEscape);
+
+    return () => {
+      document.body.style.overflow = originalBodyOverflow;
+      window.removeEventListener('keydown', handleEscape);
+      previouslyFocusedElementRef.current?.focus();
+    };
+  }, [selectedPackingItem]);
 
   const filteredDragons = useMemo(() => {
     return DRAGONS.filter(dragon => {
@@ -47,11 +104,13 @@ export default function App() {
   };
 
   const Navbar = () => (
-    <nav className="sticky top-0 z-50 w-full border-b border-codex-border bg-codex-surface px-8 h-16 flex items-center justify-between">
+    <nav aria-label="Primary" className="sticky top-0 z-50 w-full border-b border-codex-border bg-codex-surface px-8 h-16 flex items-center justify-between">
       <div className="max-w-7xl mx-auto w-full flex items-center justify-between">
-        <div 
+        <button
+          type="button"
           className="flex items-center gap-4 cursor-pointer group"
           onClick={() => setView('grid')}
+          aria-label="Go to catalog"
         >
           <div className="w-8 h-8 rounded-full border border-codex-accent flex items-center justify-center transition-all group-hover:scale-110">
             <div className="w-0.5 h-4 bg-codex-accent rotate-45"></div>
@@ -59,18 +118,22 @@ export default function App() {
           <div>
             <h1 className="text-mono tracking-[0.2em] text-[11px] font-bold uppercase leading-none">Draconic Archive • Vol. IV</h1>
           </div>
-        </div>
+        </button>
 
         <div className="flex items-center gap-8 font-sans text-[11px] uppercase tracking-[0.2em]">
           <button 
+            type="button"
             onClick={() => setView('grid')}
             className={`transition-all hover:text-codex-accent ${view === 'grid' || view === 'detail' ? 'text-codex-accent border-b border-codex-accent pb-1' : 'opacity-50'}`}
+            aria-current={view === 'grid' || view === 'detail' ? 'page' : undefined}
           >
             Catalog
           </button>
           <button 
+            type="button"
             onClick={() => setView('lore')}
             className={`transition-all hover:text-codex-accent ${view === 'lore' ? 'text-codex-accent border-b border-codex-accent pb-1' : 'opacity-50'}`}
+            aria-current={view === 'lore' ? 'page' : undefined}
           >
             Handbook
           </button>
@@ -81,9 +144,15 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-codex-bg text-[#d4d4d8] selection:bg-codex-accent/20">
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:top-3 focus:left-3 focus:z-[70] focus:px-4 focus:py-2 focus:rounded-full focus:bg-codex-accent focus:text-black focus:font-bold"
+      >
+        Skip to main content
+      </a>
       <Navbar />
 
-      <main className="max-w-7xl mx-auto px-8 py-12">
+      <main id="main-content" className="max-w-7xl mx-auto px-8 py-12">
         <AnimatePresence mode="wait">
           {view === 'grid' && (
             <motion.div
@@ -108,8 +177,10 @@ export default function App() {
               {/* Filters */}
               <div className="flex flex-col md:flex-row gap-6 items-start md:items-center justify-between border-y border-codex-border py-8">
                 <div className="relative w-full md:w-96">
-                  <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-codex-muted" size={14} />
+                  <label htmlFor="dragon-search" className="sr-only">Search dragons by name or species</label>
+                  <Search aria-hidden="true" className="absolute left-4 top-1/2 -translate-y-1/2 text-codex-muted" size={14} />
                   <input 
+                    id="dragon-search"
                     type="text" 
                     placeholder="Search by name or species..."
                     className="w-full pl-12 pr-4 py-2.5 bg-codex-card border border-codex-border rounded-full text-xs focus:outline-none focus:border-codex-accent transition-colors"
@@ -117,16 +188,18 @@ export default function App() {
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
                 </div>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex flex-wrap gap-3" role="group" aria-label="Filter dragons by rarity">
                   {['All', ...Object.values(Rarity)].map((rarity) => (
                     <button
                       key={rarity}
+                      type="button"
                       onClick={() => setActiveRarity(rarity as any)}
                       className={`text-mono text-[9px] px-4 py-1.5 border rounded-full transition-all tracking-widest ${
                         activeRarity === rarity 
                           ? 'border-codex-accent text-codex-accent bg-codex-accent/5 shadow-[0_0_15px_rgba(197,160,89,0.1)]' 
                           : 'border-white/10 opacity-40 hover:opacity-100 hover:border-codex-muted'
                       }`}
+                      aria-pressed={activeRarity === rarity}
                     >
                       {rarity}
                     </button>
@@ -137,11 +210,13 @@ export default function App() {
               {/* Dragon Grid */}
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 pb-12">
                 {filteredDragons.map((dragon, idx) => (
-                  <motion.div
+                  <motion.button
                     key={dragon.id}
+                    type="button"
                     layoutId={`dragon-card-${dragon.id}`}
-                    className="codex-card flex flex-col group cursor-pointer overflow-hidden rounded-2xl bg-white/[0.02]"
+                    className="codex-card text-left w-full flex flex-col group cursor-pointer overflow-hidden rounded-2xl bg-white/[0.02]"
                     onClick={() => handleSelectDragon(dragon)}
+                    aria-label={`Open study case for ${dragon.name}`}
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
@@ -179,7 +254,7 @@ export default function App() {
                         <span className="text-mono text-[9px] group-hover:text-codex-accent transition-colors">Study Case →</span>
                       </div>
                     </div>
-                  </motion.div>
+                  </motion.button>
                 ))}
               </div>
 
@@ -206,6 +281,7 @@ export default function App() {
               </div>
 
               <button 
+                type="button"
                 onClick={() => setView('grid')}
                 className="flex items-center gap-3 text-mono text-[10px] hover:text-codex-accent transition-all group mb-8 border border-white/10 px-4 py-2 rounded-full bg-white/[0.02]"
               >
@@ -415,17 +491,93 @@ export default function App() {
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                     {PACKING_LIST.map((item, i) => (
-                      <div key={i} className="flex items-center gap-5 p-6 border border-white/5 bg-codex-bg rounded-2xl group hover:border-codex-accent/50 transition-all">
+                      <button
+                        key={i}
+                        type="button"
+                        onClick={() => setSelectedPackingItem(item)}
+                        className="text-left flex items-center gap-5 p-6 border border-white/5 bg-codex-bg rounded-2xl group hover:border-codex-accent/50 transition-all"
+                        aria-label={`Open details for ${item.item}`}
+                      >
                         <div className="w-1.5 h-10 bg-codex-accent rounded-full opacity-20 group-hover:opacity-100" />
                         <div>
                            <p className="font-sans font-bold text-sm tracking-widest opacity-80 uppercase leading-tight mb-1">{item.item}</p>
                            <p className="text-mono text-[9px] opacity-40">Deployment: {item.requirement}</p>
                         </div>
-                      </div>
+                      </button>
                     ))}
                   </div>
                 </section>
               </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        <AnimatePresence>
+          {selectedPackingItem && (
+            <motion.div
+              className="fixed inset-0 z-[60] bg-black/70 backdrop-blur-sm px-4 py-10 overflow-y-auto"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setSelectedPackingItem(null)}
+            >
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="packing-item-title"
+                aria-describedby="packing-item-description"
+                className="max-w-2xl mx-auto border border-codex-accent/30 bg-codex-card rounded-3xl p-8 md:p-10 space-y-8 shadow-2xl shadow-black/70"
+                initial={{ opacity: 0, y: 20, scale: 0.98 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.98 }}
+                transition={{ duration: 0.2 }}
+                onClick={(event) => event.stopPropagation()}
+              >
+                <div className="flex items-start justify-between gap-6">
+                  <div className="space-y-2">
+                    <p className="text-mono text-[10px] uppercase tracking-[0.2em] opacity-50">Expedition Gear Dossier</p>
+                    <h3 id="packing-item-title" className="heading-serif text-4xl md:text-5xl font-light leading-tight">
+                      {selectedPackingItem.item}
+                    </h3>
+                    <p className="text-codex-accent text-[10px] uppercase tracking-[0.2em] font-bold opacity-70">
+                      Recommended for: {selectedPackingItem.requirement}
+                    </p>
+                  </div>
+                  <button
+                    ref={closePackingItemModalButtonRef}
+                    type="button"
+                    onClick={() => setSelectedPackingItem(null)}
+                    className="shrink-0 rounded-full border border-white/10 p-2 hover:border-codex-accent hover:text-codex-accent transition-colors"
+                    aria-label="Close item details"
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
+
+                <div className="grid gap-5">
+                  <article id="packing-item-description" className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-2">
+                    <p className="text-mono text-[9px] uppercase tracking-[0.2em] text-codex-accent/80">Where To Find It</p>
+                    <p className="text-sm leading-relaxed text-codex-ink/80">{selectedPackingItem.whereToFind}</p>
+                  </article>
+
+                  <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-2">
+                    <p className="text-mono text-[9px] uppercase tracking-[0.2em] text-codex-accent/80">How To Use It</p>
+                    <p className="text-sm leading-relaxed text-codex-ink/80">{selectedPackingItem.howToUse}</p>
+                  </article>
+
+                  <article className="rounded-2xl border border-white/10 bg-white/[0.02] p-5 space-y-3">
+                    <p className="text-mono text-[9px] uppercase tracking-[0.2em] text-codex-accent/80">Dragons That Protect It</p>
+                    <ul className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedPackingItem.protectedBy.map((dragonName) => (
+                        <li key={dragonName} className="flex items-center gap-2 text-sm text-codex-ink/85">
+                          <Shield size={13} className="text-codex-accent" />
+                          <span>{dragonName}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </article>
+                </div>
+              </motion.div>
             </motion.div>
           )}
         </AnimatePresence>

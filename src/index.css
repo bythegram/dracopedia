@@ -20,6 +20,13 @@ body {
   @apply bg-codex-bg text-codex-ink font-sans selection:bg-codex-accent/20 transition-colors duration-500;
 }
 
+button:focus-visible,
+input:focus-visible,
+[role="button"]:focus-visible {
+  outline: 2px solid var(--color-codex-accent);
+  outline-offset: 2px;
+}
+
 .codex-card {
   @apply border border-codex-border bg-codex-card/50 transition-all duration-300 hover:border-codex-accent/40;
 }
